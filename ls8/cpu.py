@@ -7,8 +7,8 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.memory = [0] * 256
-        self.register = [0] * 8
+        self.ram = [0] * 256
+        self.reg = [0] * 8
         self.pc = 0
 
     def load(self):
@@ -43,10 +43,13 @@ class CPU:
             raise Exception("Unsupported ALU operation")
 
     def ram_read(self, mar):
-        return self.memory[mar]    
-
+        try:
+            return int(self.ram[mar], 2)    
+        except:
+            return 0
+        # return self.ram[mar]
     def ram_write(self, mdr, mar):
-         self.memory[mar] = mdr
+        self.ram[mar] = mdr
 
     def trace(self):
         """
@@ -70,6 +73,26 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
+        # Halt CPU and exit emulator
+        HLT = 0b00000001 
+        # Set value of register to integer
+        LDI = 0b10000010
+        # Print numeric value stored in register
+        PRN = 0b01000111
+
         ir = self.ram_read(self.pc)
         operand_a = self.ram_read(self.pc + 1)
         operand_b = self.ram_read(self.pc + 2)
+        running = True
+
+        while running: 
+            if ir == PRN: 
+                print(self.reg[operand_a])
+                self.pc += 2
+            elif ir == LDI:
+                self.reg[operand_a] = operand_b
+                self.pc += 3
+            elif ir == HLT:
+                running = False
+                sys.exit(1)         
+
