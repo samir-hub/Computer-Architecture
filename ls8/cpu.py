@@ -14,40 +14,64 @@ class CPU:
     def load(self):
         """Load a program into memory."""
 
-        address = 0
+        
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
+        if len(sys.argv) != 2: 
+            print("Need file name!")
+            sys.exit(1)  
+        try: 
+            address = 0
+            with open(sys.argv[1]) as f:
+                for line in f: 
+                    comment_split = line.split("#")
+                    value = comment_split[0].strip()
+                    if value == "":
+                        continue
+                    num = int(value, 2)
+                    #print(f"{num:08b}: {num}")
+                    #print(value)
+                    self.ram[address] = num
+                    #print(address)
+                    address += 1
+
+        except FileNotFoundError: 
+            print("File not found!")  
+            sys.exit(2)      
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
 
     def ram_read(self, mar):
-        try:
-            return int(self.ram[mar], 2)    
-        except:
-            return 0
-        # return self.ram[mar]
+        return self.ram[mar]
+        # try: 
+        #      return int(self.ram[mar], 2)
+        # except: 
+        #     return 0     
+
     def ram_write(self, mdr, mar):
         self.ram[mar] = mdr
 
@@ -79,19 +103,26 @@ class CPU:
         LDI = 0b10000010
         # Print numeric value stored in register
         PRN = 0b01000111
+        # Multiply the values in two registers together and store the result in registerA
+        MUL = 0b10100010
 
-        ir = self.ram_read(self.pc)
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)
         running = True
 
         while running: 
+            
+            ir = self.ram_read(self.pc)
+            #print(ir)
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
             if ir == PRN: 
                 print(self.reg[operand_a])
                 self.pc += 2
             elif ir == LDI:
                 self.reg[operand_a] = operand_b
                 self.pc += 3
+            elif ir == MUL:
+                self.alu("MUL", operand_a, operand_b)
+                self.pc += 3    
             elif ir == HLT:
                 running = False
                 sys.exit(1)         
