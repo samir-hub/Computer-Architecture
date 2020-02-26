@@ -10,27 +10,10 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.sp = 7 # SP is R7
 
     def load(self):
         """Load a program into memory."""
-
-        
-
-        # For now, we've just hardcoded a program:
-
-        # program = [
-        #     # From print8.ls8
-        #     0b10000010, # LDI R0,8
-        #     0b00000000,
-        #     0b00001000,
-        #     0b01000111, # PRN R0
-        #     0b00000000,
-        #     0b00000001, # HLT
-        # ]
-
-        # for instruction in program:
-        #     self.ram[address] = instruction
-        #     address += 1
 
         if len(sys.argv) != 2: 
             print("Need file name!")
@@ -66,11 +49,7 @@ class CPU:
             raise Exception("Unsupported ALU operation")
 
     def ram_read(self, mar):
-        return self.ram[mar]
-        # try: 
-        #      return int(self.ram[mar], 2)
-        # except: 
-        #     return 0     
+        return self.ram[mar]   
 
     def ram_write(self, mdr, mar):
         self.ram[mar] = mdr
@@ -105,6 +84,11 @@ class CPU:
         PRN = 0b01000111
         # Multiply the values in two registers together and store the result in registerA
         MUL = 0b10100010
+        # Push the value in the given register on the stack
+        PUSH = 0b01000101
+        # Pop the value at the top of the stack into the given register
+        POP = 0b01000110
+        
 
         running = True
 
@@ -125,5 +109,24 @@ class CPU:
                 self.pc += 3    
             elif ir == HLT:
                 running = False
-                sys.exit(1)         
+                sys.exit(1)       
+            elif ir == PUSH:
+                #Decrement the sp.
+                self.reg[self.sp] -= 1
+                # Copy the value in the given register to the address pointed to by sp
+                val = self.reg[operand_a]
+                self.ram[self.reg[self.sp]] = val
+                self.pc += 2
+
+            elif ir == POP:
+                # Grab value from the top of the stack
+                reg = self.ram[self.pc + 1]
+                val = self.ram[self.reg[self.sp]]    
+                # Copy the value from the address pointed to by sp to the given register
+                self.reg[reg] = val
+                # Increment sp
+                self.reg[self.sp] += 1
+                self.pc += 2
+                       
+
 
