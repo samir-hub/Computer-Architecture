@@ -11,6 +11,7 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7 # SP is R7
+        self.fl = 0
 
     def load(self):
         """Load a program into memory."""
@@ -44,7 +45,13 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "CMP":
+            if self.reg[reg_a] == self.reg[reg_b]:  
+                self.fl = self.fl | 1 
+            elif self.reg[reg_a] > self.reg[reg_b]: 
+                self.fl = self.fl | 2 
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.fl = self.fl | 4 
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -60,9 +67,9 @@ class CPU:
         from run() if you need help debugging.
         """
 
-        print(f"TRACE: %02X | %02X %02X %02X |" % (
+        print(f"TRACE: %02X | %02X %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
+            self.fl,
             #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -92,7 +99,16 @@ class CPU:
         CALL = 0b01010000
         # Pop the value from the top of the stack and store it in the PC
         RET = 0b00010001
+        # Add regA and regB
         ADD = 0b10100000
+        # Compare the values in two registers.
+        CMP = 0b10100111
+        # Jump to the address stored in the given register.
+        JMP = 0b01010100
+        # If equal flag is set (true), jump to the address stored in the given register.
+        JEQ = 0b01010101
+        # If E flag is clear (false, 0), jump to the address stored in the given register.
+        JNE = 0b01010110
         
 
         running = True
@@ -146,6 +162,24 @@ class CPU:
                 val = self.ram[self.reg[self.sp]] 
                 self.pc = val
                 self.reg[self.sp] += 1    
-                     
-
-
+            elif ir == CMP:
+                self.alu("CMP", operand_a, operand_b)
+                self.pc += 3
+            elif ir == JMP:
+                self.reg[self.sp] -= 1
+                self.ram[self.reg[self.sp]] = self.pc + 2
+                self.pc = self.reg[operand_a]
+            elif ir == JEQ:
+                if self.fl == 1 or self.fl == 3 or self.fl == 7 or self.fl == 5: 
+                    self.reg[self.sp] -= 1
+                    self.ram[self.reg[self.sp]] = self.pc + 2
+                    self.pc = self.reg[operand_a]
+                else: 
+                    self.pc += 2        
+            elif ir == JNE:
+                if self.fl == 0 or self.fl == 2 or self.fl == 3 or self.fl == 4: 
+                    self.reg[self.sp] -= 1
+                    self.ram[self.reg[self.sp]] = self.pc + 2
+                    self.pc = self.reg[operand_a]
+                else: 
+                    self.pc += 2 
