@@ -88,12 +88,16 @@ class CPU:
         PUSH = 0b01000101
         # Pop the value at the top of the stack into the given register
         POP = 0b01000110
+        # Calls a subroutine (function) at the address stored in the register
+        CALL = 0b01010000
+        # Pop the value from the top of the stack and store it in the PC
+        RET = 0b00010001
+        ADD = 0b10100000
         
 
         running = True
 
         while running: 
-            
             ir = self.ram_read(self.pc)
             #print(ir)
             operand_a = self.ram_read(self.pc + 1)
@@ -107,6 +111,9 @@ class CPU:
             elif ir == MUL:
                 self.alu("MUL", operand_a, operand_b)
                 self.pc += 3    
+            elif ir == ADD:
+                self.alu("ADD", operand_a, operand_b)
+                self.pc += 3     
             elif ir == HLT:
                 running = False
                 sys.exit(1)       
@@ -117,16 +124,28 @@ class CPU:
                 val = self.reg[operand_a]
                 self.ram[self.reg[self.sp]] = val
                 self.pc += 2
-
+                # print(self.ram)
+                # print(self.reg)
             elif ir == POP:
                 # Grab value from the top of the stack
-                reg = self.ram[self.pc + 1]
+                reg = operand_a
                 val = self.ram[self.reg[self.sp]]    
                 # Copy the value from the address pointed to by sp to the given register
                 self.reg[reg] = val
                 # Increment sp
                 self.reg[self.sp] += 1
                 self.pc += 2
-                       
+                # print(self.ram)
+                # print(self.reg)
+            elif ir == CALL:
+                self.reg[self.sp] -= 1
+                self.ram[self.reg[self.sp]] = self.pc + 2
+                self.pc = self.reg[operand_a]
+                
+            elif ir == RET:
+                val = self.ram[self.reg[self.sp]] 
+                self.pc = val
+                self.reg[self.sp] += 1    
+                     
 
 
